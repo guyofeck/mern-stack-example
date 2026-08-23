@@ -1,5 +1,9 @@
 # AGENTS.md — AI Agent Guide
 
+## Base44 Dev Environment
+
+Run with `docker compose -f docker-compose.base44.yml up -d`. No external secrets needed — uses a local MongoDB container. The Vite client proxies `/record` to the Express API service. Seed data with `docker compose -f docker-compose.base44.yml exec api node seed.js`.
+
 This file is the source of truth for AI agents working in this repository.
 
 ## Project Overview
