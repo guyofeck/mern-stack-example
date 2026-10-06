@@ -11,14 +11,6 @@ services:
       retries: 20
       start_period: 10s
 
-  server-deps:
-    image: node:22
-    working_dir: /app
-    volumes:
-      - ./mern/server:/app
-      - server-node-modules:/app/node_modules
-    command: ["sh", "-ec", "npm ci --no-audit --no-fund"]
-
   seed:
     image: node:22
     working_dir: /app
@@ -34,11 +26,10 @@ services:
       - |
         COUNT=$$(node --input-type=module -e "import {MongoClient} from 'mongodb'; const c=new MongoClient(process.env.ATLAS_URI); await c.connect(); console.log(await c.db('employees').collection('records').countDocuments()); await c.close();")
         if [ "$$COUNT" = "0" ]; then node seed.js; else echo "Skipping seed: $$COUNT records exist"; fi
+    # Runs after the server is healthy so its dependency install has finished.
     depends_on:
-      mongodb:
+      server:
         condition: service_healthy
-      server-deps:
-        condition: service_completed_successfully
 
   server:
     image: node:22
@@ -50,20 +41,16 @@ services:
     environment:
       - ATLAS_URI=mongodb://mongodb:27017/
       - PORT=5050
-    command: ["node", "--watch", "server.js"]
+    command: ["sh", "-ec", "npm ci --no-audit --no-fund && exec node --watch server.js"]
     healthcheck:
       test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:5050/record"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 60s
     depends_on:
       mongodb:
         condition: service_healthy
-      server-deps:
-        condition: service_completed_successfully
-      seed:
-        condition: service_completed_successfully
 
   client:
     image: node:22
