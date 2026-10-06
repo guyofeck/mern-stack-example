@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/record': 'http://localhost:5050',
+      '/record': process.env.API_PROXY_TARGET || 'http://localhost:5050',
     },
   },
 })

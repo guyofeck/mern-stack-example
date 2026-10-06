@@ -78,3 +78,12 @@ Consult [EDD.md](./EDD.md) before making changes that touch:
 - Express routes that read or write database records
 - Validation, form fields, API payloads, or UI that depend on persisted data
 - Schema documentation, Mermaid diagrams, or entity modeling discussions
+
+## Base44 Dev Environment
+
+- Run: `docker compose -f docker-compose.base44.yml up -d`. Client (Vite) on host port 3000; API and MongoDB are internal only.
+- MongoDB is a local `mongo:7` container (no Atlas needed); `ATLAS_URI` is set via compose `environment:`, so `config.env` is not used (server runs `node --watch server.js`, not `npm start`).
+- Vite proxies `/record` to `API_PROXY_TARGET` (set to `http://server:5050` in compose; defaults to `localhost:5050`).
+- The `seed` one-shot only runs `seed.js` when `employees.records` is empty, because `seed.js` deletes all records first.
+- `CYPRESS_INSTALL_BINARY=0` skips the Cypress binary download during the client's `npm ci`.
+- Verify: `curl localhost:3000/record` should return the JSON records through the proxy.
