@@ -62,6 +62,8 @@ services:
         condition: service_healthy
       server-deps:
         condition: service_completed_successfully
+      seed:
+        condition: service_completed_successfully
 
   client:
     image: node:22
