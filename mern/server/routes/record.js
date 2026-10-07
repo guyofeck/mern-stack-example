@@ -11,11 +11,26 @@ import { ObjectId } from "mongodb";
 // The router will be added as a middleware and will take control of requests starting with path /record.
 const router = express.Router();
 
-// This section will help you get a list of all the records.
+// List records, optionally filtering by a case-insensitive name substring.
 router.get("/", async (req, res) => {
-  let collection = await db.collection("records");
-  let results = await collection.find({}).toArray();
-  res.send(results).status(200);
+  if (req.query.name !== undefined && typeof req.query.name !== "string") {
+    return res.status(400).send("Name must be a string");
+  }
+
+  const name = (req.query.name || "").trim();
+  // Treat the search as literal text, not a user-supplied regular expression.
+  const query = name
+    ? { name: { $regex: name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } }
+    : {};
+
+  try {
+    const collection = db.collection("records");
+    const results = await collection.find(query).toArray();
+    res.status(200).send(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching records");
+  }
 });
 
 // This section will help you get a single record by id

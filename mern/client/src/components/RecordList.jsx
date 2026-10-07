@@ -46,22 +46,29 @@ const Record = (props) => (
 
 export default function RecordList() {
   const [records, setRecords] = useState([]);
+  const [searchName, setSearchName] = useState("");
 
-  // This method fetches the records from the database.
+  // Fetch matching records from the database whenever the search changes.
   useEffect(() => {
+    const controller = new AbortController();
     async function getRecords() {
-      const response = await fetch(`/record/`);
-      if (!response.ok) {
-        const message = `An error occurred: ${response.statusText}`;
-        console.error(message);
-        return;
+      try {
+        const params = new URLSearchParams({ name: searchName });
+        const response = await fetch(`/record/?${params}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`An error occurred: ${response.statusText}`);
+        }
+        const records = await response.json();
+        setRecords(records);
+      } catch (error) {
+        if (error.name !== "AbortError") console.error(error);
       }
-      const records = await response.json();
-      setRecords(records);
     }
     getRecords();
-    return;
-  }, [records.length]);
+    return () => controller.abort();
+  }, [searchName]);
 
   // This method will delete a record
   async function deleteRecord(id) {
@@ -89,6 +96,19 @@ export default function RecordList() {
   return (
     <>
       <h3 className="text-lg font-semibold p-4">Employee Records</h3>
+      <div className="mb-4">
+        <label htmlFor="search-name" className="block text-sm font-medium mb-2">
+          Search by name
+        </label>
+        <input
+          id="search-name"
+          type="search"
+          placeholder="Search employee names…"
+          value={searchName}
+          onChange={(event) => setSearchName(event.target.value)}
+          className="w-full sm:max-w-sm rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+        />
+      </div>
       <div className="border rounded-lg overflow-hidden">
         <div className="relative w-full overflow-auto">
           <table className="w-full caption-bottom text-sm">
