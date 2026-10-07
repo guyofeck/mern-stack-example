@@ -8,6 +8,8 @@ export default function Record() {
     level: "",
   });
   const [isNew, setIsNew] = useState(true);
+  const [errors, setErrors] = useState({});
+  const [saveError, setSaveError] = useState("");
   const params = useParams();
   const navigate = useNavigate();
 
@@ -55,7 +57,19 @@ export default function Record() {
   // This function will handle the submission.
   async function onSubmit(e) {
     e.preventDefault();
-    const person = { ...form };
+    const person = { ...form, name: form.name.trim(), position: form.position.trim() };
+    const validationErrors = {};
+    if (!person.name) validationErrors.name = "Name is required.";
+    if (person.position.length < 2) {
+      validationErrors.position = "Position must be at least 2 characters.";
+    }
+    if (!["Intern", "Junior", "Senior"].includes(person.level)) {
+      validationErrors.level = "Select Intern, Junior or Senior.";
+    }
+    setErrors(validationErrors);
+    setSaveError("");
+    if (Object.keys(validationErrors).length) return;
+
     try {
       let response;
       if (isNew) {
@@ -79,13 +93,18 @@ export default function Record() {
       }
 
       if (!response.ok) {
+        if (response.status === 400) {
+          const result = await response.json();
+          setErrors(result.errors);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-    } catch (error) {
-      console.error('A problem occurred adding or updating a record: ', error);
-    } finally {
       setForm({ name: "", position: "", level: "" });
       navigate("/");
+    } catch (error) {
+      console.error('A problem occurred adding or updating a record: ', error);
+      setSaveError("Unable to save the record. Please try again.");
     }
   }
 
@@ -95,6 +114,7 @@ export default function Record() {
       <h3 className="text-lg font-semibold p-4">Create/Update Employee Record</h3>
       <form
         onSubmit={onSubmit}
+        noValidate
         className="border rounded-lg overflow-hidden p-4"
       >
         <div className="grid grid-cols-1 gap-x-8 gap-y-10 border-b border-slate-900/10 pb-12 md:grid-cols-2">
@@ -122,6 +142,9 @@ export default function Record() {
                     type="text"
                     name="name"
                     id="name"
+                    required
+                    aria-invalid={Boolean(errors.name)}
+                    aria-describedby={errors.name ? "name-error" : undefined}
                     className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-slate-900 placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6"
                     placeholder="First Last"
                     value={form.name}
@@ -129,6 +152,9 @@ export default function Record() {
                   />
                 </div>
               </div>
+              {errors.name && (
+                <p id="name-error" role="alert" className="mt-2 text-sm text-red-600">{errors.name}</p>
+              )}
             </div>
             <div className="sm:col-span-4">
               <label
@@ -143,6 +169,10 @@ export default function Record() {
                     type="text"
                     name="position"
                     id="position"
+                    minLength={2}
+                    required
+                    aria-invalid={Boolean(errors.position)}
+                    aria-describedby={errors.position ? "position-error" : undefined}
                     className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-slate-900 placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6"
                     placeholder="Developer Advocate"
                     value={form.position}
@@ -150,9 +180,16 @@ export default function Record() {
                   />
                 </div>
               </div>
+              {errors.position && (
+                <p id="position-error" role="alert" className="mt-2 text-sm text-red-600">{errors.position}</p>
+              )}
             </div>
             <div>
-              <fieldset className="mt-4">
+              <fieldset
+                className="mt-4"
+                aria-invalid={Boolean(errors.level)}
+                aria-describedby={errors.level ? "level-error" : undefined}
+              >
                 <legend className="sr-only">Position Options</legend>
                 <div className="space-y-4 sm:flex sm:items-center sm:space-x-10 sm:space-y-0">
                   <div className="flex items-center">
@@ -203,10 +240,14 @@ export default function Record() {
                     </label>
                   </div>
                 </div>
+                {errors.level && (
+                  <p id="level-error" role="alert" className="mt-2 text-sm text-red-600">{errors.level}</p>
+                )}
               </fieldset>
             </div>
           </div>
         </div>
+        {saveError && <p role="alert" className="mt-4 text-sm text-red-600">{saveError}</p>}
         <input
           type="submit"
           value="Save Employee Record"
