@@ -15,7 +15,7 @@ Data model for the **MERN Stack Employee Records App**.
 _id:       ObjectId
 name:      string        # employee full name
 position:  string        # job title / role
-level:     string        # seniority level, e.g. "junior", "mid", "senior"
+level:     string        # new/updated records: "Intern", "Junior", or "Senior"
 ```
 
 ---
@@ -44,6 +44,6 @@ erDiagram
 
 ## Notes
 
-- No validation schema is enforced at the database level, and the current Express routes (`mern/server/routes/record.js`) do not enforce request-body validation.
-- `level` is a free-form string. Typical values used in the seed data: `junior`, `mid`, `senior`.
-- The application convention expects `name`, `position`, and `level`, but these fields are not currently enforced by backend validation.
+- No validation schema is enforced at the database level. The form and Express POST/PATCH routes require a nonblank string `name`, a string `position` of at least 2 characters after trimming, and a `level` equal to `Intern`, `Junior`, or `Senior`.
+- Invalid writes return HTTP 400 with an `errors` object keyed by field; the form displays these errors inline and retains input on failed saves.
+- Existing seed data may contain legacy lowercase levels (`junior`, `mid`, `senior`). These records are unchanged; edits must use one of the allowed levels.

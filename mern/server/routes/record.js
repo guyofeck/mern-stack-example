@@ -1,4 +1,5 @@
 import express from "express";
+import { validateRecord } from "../validation/record.js";
 
 // This will help us connect to the database
 import db from "../db/connection.js";
@@ -30,6 +31,9 @@ router.get("/:id", async (req, res) => {
 
 // This section will help you create a new record.
 router.post("/", async (req, res) => {
+  const errors = validateRecord(req.body);
+  if (Object.keys(errors).length) return res.status(400).json({ errors });
+
   try {
     let newDocument = {
       name: req.body.name,
@@ -47,6 +51,9 @@ router.post("/", async (req, res) => {
 
 // This section will help you update a record by id.
 router.patch("/:id", async (req, res) => {
+  const errors = validateRecord(req.body);
+  if (Object.keys(errors).length) return res.status(400).json({ errors });
+
   try {
     const query = { _id: new ObjectId(req.params.id) };
     const updates = {

@@ -87,3 +87,4 @@ Consult [EDD.md](./EDD.md) before making changes that touch:
 - The server container installs its own deps on start; `seed` waits for the server to be healthy, then only runs `seed.js` when `employees.records` is empty, because `seed.js` deletes all records first.
 - `CYPRESS_INSTALL_BINARY=0` skips the Cypress binary download during the client's `npm ci`.
 - Verify: `curl localhost:3000/record` should return the JSON records through the proxy.
+- Record validation tests: `docker compose -f docker-compose.base44.yml exec -T server node --test validation/record.test.js`. POST and PATCH both require all three fields and return HTTP 400 `{ errors: { field: message } }` before writing invalid input. Legacy seed levels remain unchanged; the edit form normalizes intern/junior/senior casing, but unsupported values need a new selection.

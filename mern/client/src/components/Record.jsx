@@ -1,12 +1,28 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
+function validateRecord(form) {
+  const errors = {};
+  if (typeof form.name !== "string" || !form.name.trim()) {
+    errors.name = "Name is required.";
+  }
+  if (typeof form.position !== "string" || form.position.trim().length < 2) {
+    errors.position = "Position must be at least 2 characters.";
+  }
+  if (!["Intern", "Junior", "Senior"].includes(form.level)) {
+    errors.level = "Level must be one of Intern, Junior or Senior.";
+  }
+  return errors;
+}
+
 export default function Record() {
   const [form, setForm] = useState({
     name: "",
     position: "",
     level: "",
   });
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
   const [isNew, setIsNew] = useState(true);
   const params = useParams();
   const navigate = useNavigate();
@@ -55,6 +71,11 @@ export default function Record() {
   // This function will handle the submission.
   async function onSubmit(e) {
     e.preventDefault();
+    const validationErrors = validateRecord(form);
+    setErrors(validationErrors);
+    setSubmitError("");
+    if (Object.keys(validationErrors).length) return;
+
     const person = { ...form };
     try {
       let response;
@@ -79,13 +100,20 @@ export default function Record() {
       }
 
       if (!response.ok) {
+        if (response.status === 400) {
+          const result = await response.json();
+          if (result.errors) {
+            setErrors(result.errors);
+            return;
+          }
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-    } catch (error) {
-      console.error('A problem occurred adding or updating a record: ', error);
-    } finally {
       setForm({ name: "", position: "", level: "" });
       navigate("/");
+    } catch (error) {
+      console.error('A problem occurred adding or updating a record: ', error);
+      setSubmitError("Unable to save the record. Please try again.");
     }
   }
 
@@ -125,10 +153,15 @@ export default function Record() {
                     className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-slate-900 placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6"
                     placeholder="First Last"
                     value={form.name}
+                    aria-invalid={Boolean(errors.name)}
+                    aria-describedby={errors.name ? "name-error" : undefined}
                     onChange={(e) => updateForm({ name: e.target.value })}
                   />
                 </div>
               </div>
+              {errors.name && (
+                <p id="name-error" role="alert" className="mt-2 text-sm text-red-600">{errors.name}</p>
+              )}
             </div>
             <div className="sm:col-span-4">
               <label
@@ -146,13 +179,22 @@ export default function Record() {
                     className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-slate-900 placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6"
                     placeholder="Developer Advocate"
                     value={form.position}
+                    aria-invalid={Boolean(errors.position)}
+                    aria-describedby={errors.position ? "position-error" : undefined}
                     onChange={(e) => updateForm({ position: e.target.value })}
                   />
                 </div>
               </div>
+              {errors.position && (
+                <p id="position-error" role="alert" className="mt-2 text-sm text-red-600">{errors.position}</p>
+              )}
             </div>
             <div>
-              <fieldset className="mt-4">
+              <fieldset
+                className="mt-4"
+                aria-invalid={Boolean(errors.level)}
+                aria-describedby={errors.level ? "level-error" : undefined}
+              >
                 <legend className="sr-only">Position Options</legend>
                 <div className="space-y-4 sm:flex sm:items-center sm:space-x-10 sm:space-y-0">
                   <div className="flex items-center">
@@ -203,10 +245,16 @@ export default function Record() {
                     </label>
                   </div>
                 </div>
+                {errors.level && (
+                  <p id="level-error" role="alert" className="mt-2 text-sm text-red-600">{errors.level}</p>
+                )}
               </fieldset>
             </div>
           </div>
         </div>
+        {submitError && (
+          <p role="alert" className="mt-2 text-sm text-red-600">{submitError}</p>
+        )}
         <input
           type="submit"
           value="Save Employee Record"
