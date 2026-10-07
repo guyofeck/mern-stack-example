@@ -46,22 +46,33 @@ const Record = (props) => (
 
 export default function RecordList() {
   const [records, setRecords] = useState([]);
+  const [search, setSearch] = useState("");
 
-  // This method fetches the records from the database.
+  // Fetch filtered records from the server; cancel stale searches.
   useEffect(() => {
+    const controller = new AbortController();
     async function getRecords() {
-      const response = await fetch(`/record/`);
-      if (!response.ok) {
-        const message = `An error occurred: ${response.statusText}`;
-        console.error(message);
-        return;
+      try {
+        const params = new URLSearchParams({ name: search.trim() });
+        const response = await fetch(`/record/?${params}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          console.error(`An error occurred: ${response.statusText}`);
+          return;
+        }
+        const records = await response.json();
+        setRecords(records);
+      } catch (error) {
+        if (error.name !== "AbortError") console.error(error);
       }
-      const records = await response.json();
-      setRecords(records);
     }
-    getRecords();
-    return;
-  }, [records.length]);
+    const timer = setTimeout(getRecords, search ? 250 : 0);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [search]);
 
   // This method will delete a record
   async function deleteRecord(id) {
@@ -89,6 +100,19 @@ export default function RecordList() {
   return (
     <>
       <h3 className="text-lg font-semibold p-4">Employee Records</h3>
+      <div className="mb-4">
+        <label htmlFor="record-name-search" className="block text-sm font-medium mb-2">
+          Search by name
+        </label>
+        <input
+          id="record-name-search"
+          type="search"
+          placeholder="Search names..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="w-full sm:max-w-sm rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+        />
+      </div>
       <div className="border rounded-lg overflow-hidden">
         <div className="relative w-full overflow-auto">
           <table className="w-full caption-bottom text-sm">
@@ -109,7 +133,13 @@ export default function RecordList() {
               </tr>
             </thead>
             <tbody className="[&amp;_tr:last-child]:border-0">
-              {recordList()}
+              {records.length ? recordList() : (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-slate-500">
+                    No records found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -13,8 +13,12 @@ const router = express.Router();
 
 // This section will help you get a list of all the records.
 router.get("/", async (req, res) => {
+  const name = typeof req.query.name === "string" ? req.query.name.trim() : "";
+  // Treat the search as literal text, not a user-supplied regular expression.
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const query = name ? { name: { $regex: escapedName, $options: "i" } } : {};
   let collection = await db.collection("records");
-  let results = await collection.find({}).toArray();
+  let results = await collection.find(query).toArray();
   res.send(results).status(200);
 });
 

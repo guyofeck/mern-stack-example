@@ -114,7 +114,7 @@ Base URL: `http://localhost:5050`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/record` | Retrieve all records |
+| `GET` | `/record` | Retrieve all records; optional `?name=Jane` filters by case-insensitive, literal partial name (blank returns all records) |
 | `GET` | `/record/:id` | Retrieve one record by ID |
 | `POST` | `/record` | Create a record |
 | `PATCH` | `/record/:id` | Update a record |
